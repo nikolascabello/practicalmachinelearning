@@ -2,8 +2,8 @@
 title: "Theming with bslib and thematic"
 author: "Nicolas cabello"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 editor_options:
   markdown:
     wrap: 72
@@ -57,25 +57,26 @@ model is trained using the train function with the 'rf' method. The
 number of trees is set to 50.
 
 ```{r}
-#modeling rf library(caret) rfcv \<-
-trainControl(method = "cv", number = 5) 
-rfcvmodel <- train(classe ~
-.,data =trainingR, method = "rf", trControl = rfcv,tuneLength =
-5,ntree=50) 
+#modeling
+rfcv <- trainControl(method = "cv", number = 5) 
+rfcvmodel <- train(classe ~.,data =trainingR, method = "rf", trControl = rfcv,tuneLength =5,ntree=50) 
 print(rfcvmodel)
-
 test_predictions <- predict(rfcvmodel, validationR)
-
 cmrfcv <- confusionMatrix(test_predictions,
 as.factor(validationR$classe))
 
 cmrfcv 
+```
 # cmrfcv Confusion Matrix and Statistics
 
           Reference
 
-Prediction A B C D E A 1395 5 0 0 0 B 0 943 5 0 1 C 0 1 847 10 1 D 0 0 3
-792 0 E 0 0 0 2 899
+Prediction A B C D E 
+A 1395 5 0 0 0 
+B 0 943 5 0 1 
+C 0 1 847 10 1 
+D 0 0 3 792 0
+E 0 0 0 2 899
 
 Overall Statistics
 
@@ -99,20 +100,22 @@ Neg Pred Value 1.0000 0.9985 0.9980 0.9971 0.9995 Prevalence 0.2845
 0.1935 0.1743 0.1639 0.1837 Detection Rate 0.2845 0.1923 0.1727 0.1615
 0.1833 Detection Prevalence 0.2855 0.1935 0.1752 0.1621 0.1837 Balanced
 Accuracy 0.9993 0.9961 0.9938 0.9922 0.9986
-```
+
 
 A Decision Tree classifier is built next. The same CV settings are used
 as with Random Forest, and the 'rpart' method is employed.
 
 ```{r}
-
 #arbol de decision 
 rpartcvmodel <- train(classe~., data=trainingR,method="rpart", trControl = rfcv, tuneLength = 10)
-fancyRpartPlot(rpartcvmodel\$finalModel) rpartcvmodel
+fancyRpartPlot(rpartcvmodel$finalModel) 
+rpartcvmodel
 
-test_predictions \<- predict(rpartcvmodel, validationR)
-cmrpartcv \<-confusionMatrix(test_predictions, as.factor(validationR\$classe))
-cmrpartcv #mrpartcv Confusion Matrix and Statistics
+test_predictions <- predict(rpartcvmodel, validationR)
+cmrpartcv <-confusionMatrix(test_predictions, as.factor(validationR$classe))
+cmrpartcv 
+```
+#mrpartcv Confusion Matrix and Statistics
 
           Reference
 
@@ -141,7 +144,6 @@ Sensitivity 0.8136 0.48894 0.7415 0.6779 0.6471 Specificity 0.9179
 0.2845 0.19352 0.1743 0.1639 0.1837 Detection Rate 0.2314 0.09462 0.1293
 0.1111 0.1189 Detection Prevalence 0.2902 0.12582 0.2166 0.2274 0.1401
 Balanced Accuracy 0.8658 0.72513 0.8179 0.7694 0.8105
-```
 
 A Gradient Boosted Machine model is also trained using the same CV
 settings as the previous models.
@@ -149,15 +151,15 @@ settings as the previous models.
 ```{r}
 
 #gradient boosted gbmcvmodel \<-
-train(classe\~., data=trainingR, method="gbm", trControl = rfcv,
+train(classe~., data=trainingR, method="gbm", trControl = rfcv,
 tuneLength = 4, verbose = F) 
-test_predictions \<- predict(gbmcvmodel,
+test_predictions <- predict(gbmcvmodel,
 validationR) 
-cmcvgbm \<- confusionMatrix(test_predictions,
-as.factor(validationR\$classe))
+cmcvgbm <- confusionMatrix(test_predictions,
+as.factor(validationR$classe))
 
 cmcvgbm #cmcvgbm Confusion Matrix and Statistics
-
+```
           Reference
 
 Prediction A B C D E A 1384 12 0 0 1 B 7 929 18 0 1 C 3 8 825 11 5 D 0 0
@@ -185,7 +187,7 @@ Neg Pred Value 0.9969 0.9949 0.9926 0.9963 0.9968 Prevalence 0.2845
 0.1935 0.1743 0.1639 0.1837 Detection Rate 0.2822 0.1894 0.1682 0.1609
 0.1811 Detection Prevalence 0.2849 0.1947 0.1737 0.1644 0.1823 Balanced
 Accuracy 0.9942 0.9862 0.9791 0.9886 0.9920
-```
+
 
 The models' accuracy values are compared, and the Random Forest model is
 found to be the most accurate among the three.
@@ -195,7 +197,7 @@ found to be the most accurate among the three.
 # Print the acuracy
 cat("Accuracy:",
 cmrfcv$overall['Accuracy'], "RF", cmrpartcv$overall['Accuracy'],"rpart",
-cmcvgbm\$overall['Accuracy'], "gbm")
+cmcvgbm$overall['Accuracy'], "gbm")
 #Accuracy: 0.9942904 RF 0.6853589 rpart 0.9818515 gbm\> 
 #random forest more accurate
 ```
@@ -204,7 +206,16 @@ testeando el set
 
 ```{r}
 
-predictionsforproject\<- predict(rfcvmodel,testing)
-predictionsforproject plot(rfcvmodel) 
-\# results B A B A A E D B A A B C B A E E A B B B
+predictionsforproject<- predict(rfcvmodel,testing)
+predictionsforproject 
+plot(rfcvmodel) 
+# results B A B A A E D B A A B C B A E E A B B B
 ```
+out of sample error
+```{r}
+cvresults <- rfcvmodel$results
+
+average_accuracy <- mean(cv_results$Accuracy)
+print(average_accuracy)
+```
+[1] 0.9873758 as results

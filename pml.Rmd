@@ -14,13 +14,24 @@ The initial steps involve loading necessary libraries and data
 columns with near-zero variance and missing values, ensuring that the
 training data is ready for model
 
-training<- pml.training
-testing<- pml.testing
+```{r}
+library(caret)
+library(corrplot)
+library(tidyverse)
+library(randomForest)
+library(FNN)
+library(cluster)
+library(kernlab)
+library(rattle)
+library(ggplot2) 
+
+```
 
 ```{r}
 #con varianza cercana a 0  NAS fuera
-training<- pml.training
-testing<- pml.testing
+
+testing<- read.csv("pml-testing.csv")
+training<- read.csv("pml-training.csv")
 training <- training[,-c(1:7)] 
 training <- training[, colSums(is.na(training)) == 0]
 depured0<- nearZeroVar(training)
@@ -32,11 +43,12 @@ sets using stratified sampling. This is done to ensure that each class
 is represented proportionally in both sets.
 
 ```{r}
-
 #ok now the split
-set.seed(1542) traiN \<- createDataPartition( trainingd0\$classe,
-p=0.75,list = F) trainingR\<-trainingd0[traiN,] validationR\<-
-trainingd0[-traiN,]
+set.seed(1542) 
+traiN <- createDataPartition( trainingd0$classe,
+p=0.75,list = F)
+trainingR<-trainingd0[traiN,]
+validationR<-trainingd0[-traiN,]
 ```
 
 The first model built is a Random Forest classifier. Cross-validation
@@ -45,18 +57,20 @@ model is trained using the train function with the 'rf' method. The
 number of trees is set to 50.
 
 ```{r}
-
 #modeling rf library(caret) rfcv \<-
-trainControl(method = "cv", number = 5) rfcvmodel \<- train(classe \~
+trainControl(method = "cv", number = 5) 
+rfcvmodel <- train(classe ~
 .,data =trainingR, method = "rf", trControl = rfcv,tuneLength =
-5,ntree=50) print(rfcvmodel)
+5,ntree=50) 
+print(rfcvmodel)
 
-test_predictions \<- predict(rfcvmodel, validationR)
+test_predictions <- predict(rfcvmodel, validationR)
 
-cmrfcv \<- confusionMatrix(test_predictions,
-as.factor(validationR\$classe))
+cmrfcv <- confusionMatrix(test_predictions,
+as.factor(validationR$classe))
 
-cmrfcv #\> cmrfcv Confusion Matrix and Statistics
+cmrfcv 
+# cmrfcv Confusion Matrix and Statistics
 
           Reference
 
@@ -93,11 +107,11 @@ as with Random Forest, and the 'rpart' method is employed.
 ```{r}
 
 #arbol de decision 
-rpartcvmodel \<- train(classe\~., data=trainingR,method="rpart", trControl = rfcv, tuneLength = 10)
+rpartcvmodel <- train(classe~., data=trainingR,method="rpart", trControl = rfcv, tuneLength = 10)
 fancyRpartPlot(rpartcvmodel\$finalModel) rpartcvmodel
 
-test_predictions \<- predict(rpartcvmodel, validationR) cmrpartcv \<-
-confusionMatrix(test_predictions, as.factor(validationR\$classe))
+test_predictions \<- predict(rpartcvmodel, validationR)
+cmrpartcv \<-confusionMatrix(test_predictions, as.factor(validationR\$classe))
 cmrpartcv #mrpartcv Confusion Matrix and Statistics
 
           Reference
@@ -138,7 +152,8 @@ settings as the previous models.
 train(classe\~., data=trainingR, method="gbm", trControl = rfcv,
 tuneLength = 4, verbose = F) 
 test_predictions \<- predict(gbmcvmodel,
-validationR) cmcvgbm \<- confusionMatrix(test_predictions,
+validationR) 
+cmcvgbm \<- confusionMatrix(test_predictions,
 as.factor(validationR\$classe))
 
 cmcvgbm #cmcvgbm Confusion Matrix and Statistics

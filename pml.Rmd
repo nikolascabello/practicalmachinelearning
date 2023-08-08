@@ -1,0 +1,195 @@
+---
+title: "Theming with bslib and thematic"
+author: "Nicolas cabello"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+The initial steps involve loading necessary libraries and data
+(pml.training and pml.testing). The data is then cleaned by removing
+columns with near-zero variance and missing values, ensuring that the
+training data is ready for model
+
+training<- pml.training
+testing<- pml.testing
+
+```{r}
+#con varianza cercana a 0  NAS fuera
+training<- pml.training
+testing<- pml.testing
+training <- training[,-c(1:7)] 
+training <- training[, colSums(is.na(training)) == 0]
+depured0<- nearZeroVar(training)
+trainingd0<-training[,-depured0]
+```
+
+After preprocessing, the dataset is split into training and validation
+sets using stratified sampling. This is done to ensure that each class
+is represented proportionally in both sets.
+
+```{r}
+
+#ok now the split
+set.seed(1542) traiN \<- createDataPartition( trainingd0\$classe,
+p=0.75,list = F) trainingR\<-trainingd0[traiN,] validationR\<-
+trainingd0[-traiN,]
+```
+
+The first model built is a Random Forest classifier. Cross-validation
+(CV) is performed with 5 folds using the trainControl function, and the
+model is trained using the train function with the 'rf' method. The
+number of trees is set to 50.
+
+```{r}
+
+#modeling rf library(caret) rfcv \<-
+trainControl(method = "cv", number = 5) rfcvmodel \<- train(classe \~
+.,data =trainingR, method = "rf", trControl = rfcv,tuneLength =
+5,ntree=50) print(rfcvmodel)
+
+test_predictions \<- predict(rfcvmodel, validationR)
+
+cmrfcv \<- confusionMatrix(test_predictions,
+as.factor(validationR\$classe))
+
+cmrfcv #\> cmrfcv Confusion Matrix and Statistics
+
+          Reference
+
+Prediction A B C D E A 1395 5 0 0 0 B 0 943 5 0 1 C 0 1 847 10 1 D 0 0 3
+792 0 E 0 0 0 2 899
+
+Overall Statistics
+
+               Accuracy : 0.9943          
+                 95% CI : (0.9918, 0.9962)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9928          
+                                          
+
+Mcnemar's Test P-Value : NA
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+
+Sensitivity 1.0000 0.9937 0.9906 0.9851 0.9978 Specificity 0.9986 0.9985
+0.9970 0.9993 0.9995 Pos Pred Value 0.9964 0.9937 0.9860 0.9962 0.9978
+Neg Pred Value 1.0000 0.9985 0.9980 0.9971 0.9995 Prevalence 0.2845
+0.1935 0.1743 0.1639 0.1837 Detection Rate 0.2845 0.1923 0.1727 0.1615
+0.1833 Detection Prevalence 0.2855 0.1935 0.1752 0.1621 0.1837 Balanced
+Accuracy 0.9993 0.9961 0.9938 0.9922 0.9986
+```
+
+A Decision Tree classifier is built next. The same CV settings are used
+as with Random Forest, and the 'rpart' method is employed.
+
+```{r}
+
+#arbol de decision 
+rpartcvmodel \<- train(classe\~., data=trainingR,method="rpart", trControl = rfcv, tuneLength = 10)
+fancyRpartPlot(rpartcvmodel\$finalModel) rpartcvmodel
+
+test_predictions \<- predict(rpartcvmodel, validationR) cmrpartcv \<-
+confusionMatrix(test_predictions, as.factor(validationR\$classe))
+cmrpartcv #mrpartcv Confusion Matrix and Statistics
+
+          Reference
+
+Prediction A B C D E A 1135 178 16 74 20 B 20 464 60 24 49 C 73 112 634
+134 109 D 148 160 122 545 140 E 19 35 23 27 583
+
+Overall Statistics
+
+               Accuracy : 0.6854          
+                 95% CI : (0.6722, 0.6983)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.6029          
+                                          
+
+Mcnemar's Test P-Value : \< 2.2e-16
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+
+Sensitivity 0.8136 0.48894 0.7415 0.6779 0.6471 Specificity 0.9179
+0.96131 0.8943 0.8610 0.9740 Pos Pred Value 0.7976 0.75203 0.5970 0.4888
+0.8486 Neg Pred Value 0.9253 0.88687 0.9425 0.9316 0.9246 Prevalence
+0.2845 0.19352 0.1743 0.1639 0.1837 Detection Rate 0.2314 0.09462 0.1293
+0.1111 0.1189 Detection Prevalence 0.2902 0.12582 0.2166 0.2274 0.1401
+Balanced Accuracy 0.8658 0.72513 0.8179 0.7694 0.8105
+```
+
+A Gradient Boosted Machine model is also trained using the same CV
+settings as the previous models.
+
+```{r}
+
+#gradient boosted gbmcvmodel \<-
+train(classe\~., data=trainingR, method="gbm", trControl = rfcv,
+tuneLength = 4, verbose = F) 
+test_predictions \<- predict(gbmcvmodel,
+validationR) cmcvgbm \<- confusionMatrix(test_predictions,
+as.factor(validationR\$classe))
+
+cmcvgbm #cmcvgbm Confusion Matrix and Statistics
+
+          Reference
+
+Prediction A B C D E A 1384 12 0 0 1 B 7 929 18 0 1 C 3 8 825 11 5 D 0 0
+11 789 6 E 1 0 1 4 888
+
+Overall Statistics
+
+               Accuracy : 0.9819          
+                 95% CI : (0.9777, 0.9854)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.977           
+                                          
+
+Mcnemar's Test P-Value : NA
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+
+Sensitivity 0.9921 0.9789 0.9649 0.9813 0.9856 Specificity 0.9963 0.9934
+0.9933 0.9959 0.9985 Pos Pred Value 0.9907 0.9728 0.9683 0.9789 0.9933
+Neg Pred Value 0.9969 0.9949 0.9926 0.9963 0.9968 Prevalence 0.2845
+0.1935 0.1743 0.1639 0.1837 Detection Rate 0.2822 0.1894 0.1682 0.1609
+0.1811 Detection Prevalence 0.2849 0.1947 0.1737 0.1644 0.1823 Balanced
+Accuracy 0.9942 0.9862 0.9791 0.9886 0.9920
+```
+
+The models' accuracy values are compared, and the Random Forest model is
+found to be the most accurate among the three.
+
+```{r}
+
+# Print the acuracy
+cat("Accuracy:",
+cmrfcv$overall['Accuracy'], "RF", cmrpartcv$overall['Accuracy'],"rpart",
+cmcvgbm\$overall['Accuracy'], "gbm")
+#Accuracy: 0.9942904 RF 0.6853589 rpart 0.9818515 gbm\> 
+#random forest more accurate
+```
+
+testeando el set
+
+```{r}
+
+predictionsforproject\<- predict(rfcvmodel,testing)
+predictionsforproject plot(rfcvmodel) 
+\# results B A B A A E D B A A B C B A E E A B B B
+```
